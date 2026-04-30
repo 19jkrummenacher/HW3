@@ -17,6 +17,7 @@ module vectors
     }
     class RealOp extends Operators<real>
     {
+        constructor() {}
         function method zero(): real {0.0}
         function method plus(l: real, r: real) : real {l + r} // adding two elements
         function method sub(l: real, r: real) : real {l - r}// subbing two elements
@@ -29,6 +30,7 @@ module vectors
 
     class IntOp extends Operators<int>
     {
+        constructor() {}
         function method zero(): int {0}
         function method plus(l: int, r: int) : int {l + r} // adding two elements
         function method sub(l: int, r: int) : int {l - r}// subbing two elements
@@ -222,7 +224,7 @@ module vectors
 
 
 
-    }//*/
+    }
 
 
     class Vec3 <T>
@@ -582,69 +584,191 @@ module vectors
 
     class Mat2 <T>
     {
-        var matrix : array2<T>
+        var mx : seq<seq<T>>
+        const op: Operators<T>
 
         predicate Valid() 
-        reads this, matrix 
+        reads this
         {
-            matrix.Length0 == 2 && matrix.Length1 == 2
+            |mx| == 2 && |mx[0]| == 2
         }
 
-        constructor (m : T)
-            ensures Valid() && fresh(matrix)
+        constructor (mx: seq<seq<T>>, op: Operators<T>)
         {
-            matrix := new T[2,2]((i, j) => m);
+            this.mx := mx;
+            this.op := op;
         }
+
+        function method unaryNegation(): ((T,T), (T,T))
+        requires |mx| == 2 && forall i :: 0 <= i < |mx| ==> |mx[i]| == 2
+        reads this, this.op
+        {
+            ((op.neg(mx[0][0]),op.neg(mx[0][1])), (op.neg(mx[1][0]), op.neg(mx[1][1])))
+        }
+
+        function method BinaryAdd(other: Mat2<T>): ((T,T), (T,T))
+        requires |mx| == 2 && forall i :: 0 <= i < |mx| ==> |mx[i]| == 2
+        requires |other.mx| == 2 && forall i :: 0 <= i < |other.mx| ==> |other.mx[i]| == 2
+        reads this, other
+        {
+            ((op.plus(mx[0][0],other.mx[0][0]),op.plus(mx[0][1],other.mx[0][1])) , (op.plus(mx[1][0],other.mx[1][0]),op.plus(mx[1][1],other.mx[1][1])))
+        }
+
+        function method BinarySub(other: Mat2<T>): ((T,T), (T,T))
+        requires |mx| == 2 && forall i :: 0 <= i < |mx| ==> |mx[i]| == 2
+        requires |other.mx| == 2 && forall i :: 0 <= i < |other.mx| ==> |other.mx[i]| == 2
+        reads this, other
+        {
+            ((op.sub(mx[0][0],other.mx[0][0]),op.sub(mx[0][1],other.mx[0][1])) , (op.sub(mx[1][0],other.mx[1][0]),op.sub(mx[1][1],other.mx[1][1])))
+        }
+
+        function method BinaryMulti(other: Mat2<T>): ((T,T), (T,T))
+        requires |mx| == 2 && forall i :: 0 <= i < |mx| ==> |mx[i]| == 2
+        requires |other.mx| == 2 && forall i :: 0 <= i < |other.mx| ==> |other.mx[i]| == 2
+        reads this, other
+        {
+            (( op.plus(op.multi(mx[0][0],other.mx[0][0]), op.multi(mx[0][1],other.mx[1][0])), op.plus(op.multi(mx[0][0],other.mx[0][1]), op.multi(mx[0][1],other.mx[1][1]))), (op.plus(op.multi(mx[1][0],other.mx[0][0]), op.multi(mx[1][1],other.mx[1][0])),   op.plus(op.multi(mx[1][0],other.mx[0][1]), op.multi(mx[1][1],other.mx[1][1]))))
+        }
+        
     }
 
     class Mat3 <T>
     {
-        var matrix : array2<T>
+        var mx : seq<seq<T>>
+        const op: Operators<T>
 
         predicate Valid() 
-        reads this, matrix 
+        reads this
         {
-            matrix.Length0 == 3 && matrix.Length1 == 3
+            |mx| == 3 && |mx[0]| == 3
         }
 
-        constructor (m : T)
-            ensures Valid() && fresh(matrix)
+        constructor (mx: seq<seq<T>>, op: Operators<T>)
         {
-            matrix := new T[3,3]((i, j) => m);
+            this.mx := mx;
+            this.op := op;
         }
-    }
+
+        function method unaryNegation(): ((T, T, T), (T, T, T), (T, T, T))
+        requires |mx| == 3 && forall i :: 0 <= i < |mx| ==> |mx[i]| == 3
+        reads this, this.op
+        {
+            ((op.neg(mx[0][0]),op.neg(mx[0][1]), op.neg(mx[0][2])), (op.neg(mx[1][0]),op.neg(mx[1][1]), op.neg(mx[1][2])), (op.neg(mx[2][0]),op.neg(mx[2][1]), op.neg(mx[2][2])))
+        }
+
+        function method BinaryAdd(other: Mat3<T>): ((T, T, T), (T, T, T), (T, T, T))
+        requires |mx| == 3 && forall i :: 0 <= i < |mx| ==> |mx[i]| == 3
+        requires |other.mx| == 3 && forall i :: 0 <= i < |other.mx| ==> |other.mx[i]| == 3
+        reads this, other
+        {
+            ((op.plus(mx[0][0],other.mx[0][0]),op.plus(mx[0][1],other.mx[0][1]),op.plus(mx[0][2],other.mx[0][2])),
+            (op.plus(mx[1][0],other.mx[1][0]),op.plus(mx[1][1],other.mx[1][1]),op.plus(mx[1][2],other.mx[1][2])),
+            (op.plus(mx[2][0],other.mx[2][0]),op.plus(mx[2][1],other.mx[2][1]),op.plus(mx[2][2],other.mx[2][2])))
+        }
+
+        function method BinarySub(other: Mat3<T>): ((T, T, T), (T, T, T), (T, T, T))
+        requires |mx| == 3 && forall i :: 0 <= i < |mx| ==> |mx[i]| == 3
+        requires |other.mx| == 3 && forall i :: 0 <= i < |other.mx| ==> |other.mx[i]| == 3
+        reads this, other
+        {
+            ((op.sub(mx[0][0],other.mx[0][0]),op.sub(mx[0][1],other.mx[0][1]),op.sub(mx[0][2],other.mx[0][2])),
+            (op.sub(mx[1][0],other.mx[1][0]),op.sub(mx[1][1],other.mx[1][1]),op.sub(mx[1][2],other.mx[1][2])),
+            (op.sub(mx[2][0],other.mx[2][0]),op.sub(mx[2][1],other.mx[2][1]),op.sub(mx[2][2],other.mx[2][2])))
+        }
+
+    } 
 
     class Mat34 <T>
     {
-        var matrix : array2<T>
+        var mx : seq<seq<T>>
+        const op: Operators<T>
 
         predicate Valid() 
-        reads this, matrix 
+        reads this
         {
-            matrix.Length0 == 3 && matrix.Length1 == 4
+            |mx| == 4 && |mx[0]| == 3
         }
 
-        constructor (m : T)
-            ensures Valid() && fresh(matrix)
+        constructor (mx: seq<seq<T>>, op: Operators<T>)
         {
-            matrix := new T[3,4]((i, j) => m);
+            this.mx := mx;
+            this.op := op;
+        }
+
+        function method unaryNegation(): ((T, T, T), (T, T, T), (T, T, T), (T, T, T))
+        requires |mx| == 4 && forall i :: 0 <= i < |mx| ==> |mx[i]| == 3
+        reads this, this.op
+        {
+            ((op.neg(mx[0][0]),op.neg(mx[0][1]), op.neg(mx[0][2])), (op.neg(mx[1][0]),op.neg(mx[1][1]), op.neg(mx[1][2])), (op.neg(mx[2][0]),op.neg(mx[2][1]), op.neg(mx[2][2])), (op.neg(mx[3][0]),op.neg(mx[3][1]), op.neg(mx[3][2])))
+        }
+
+        function method BinaryAdd(other: Mat34<T>): ((T, T, T), (T, T, T), (T, T, T), (T, T, T))
+        requires |mx| == 4 && forall i :: 0 <= i < |mx| ==> |mx[i]| == 3
+        requires |other.mx| == 4 && forall i :: 0 <= i < |other.mx| ==> |other.mx[i]| == 3
+        reads this, other
+        {
+            ((op.plus(mx[0][0],other.mx[0][0]),op.plus(mx[0][1],other.mx[0][1]),op.plus(mx[0][2],other.mx[0][2])),
+            (op.plus(mx[1][0],other.mx[1][0]),op.plus(mx[1][1],other.mx[1][1]),op.plus(mx[1][2],other.mx[1][2])),
+            (op.plus(mx[2][0],other.mx[2][0]),op.plus(mx[2][1],other.mx[2][1]),op.plus(mx[2][2],other.mx[2][2])),
+            (op.plus(mx[3][0],other.mx[3][0]),op.plus(mx[3][1],other.mx[3][1]),op.plus(mx[3][2],other.mx[3][2])))
+        }
+
+        function method BinarySub(other: Mat34<T>): ((T, T, T), (T, T, T), (T, T, T), (T, T, T))
+        requires |mx| == 4 && forall i :: 0 <= i < |mx| ==> |mx[i]| == 3
+        requires |other.mx| == 4 && forall i :: 0 <= i < |other.mx| ==> |other.mx[i]| == 3
+        reads this, other
+        {
+            ((op.sub(mx[0][0],other.mx[0][0]),op.sub(mx[0][1],other.mx[0][1]),op.sub(mx[0][2],other.mx[0][2])),
+            (op.sub(mx[1][0],other.mx[1][0]),op.sub(mx[1][1],other.mx[1][1]),op.sub(mx[1][2],other.mx[1][2])),
+            (op.sub(mx[2][0],other.mx[2][0]),op.sub(mx[2][1],other.mx[2][1]),op.sub(mx[2][2],other.mx[2][2])),
+            (op.sub(mx[3][0],other.mx[3][0]),op.sub(mx[3][1],other.mx[3][1]),op.sub(mx[3][2],other.mx[3][2])))
         }
     }
 
     class Mat4 <T>
     {
-        var matrix : array2<T>
+        var mx : seq<seq<T>>
+        const op: Operators<T>
 
         predicate Valid() 
-        reads this, matrix 
+        reads this
         {
-            matrix.Length0 == 4 && matrix.Length1 == 4
+            |mx| == 4 && |mx[0]| == 4
         }
 
-        constructor (m : T)
-            ensures Valid() && fresh(matrix)
+        constructor (mx: seq<seq<T>>, op: Operators<T>)
         {
-            matrix := new T[4,4]((i, j) => m);
+            this.mx := mx;
+            this.op := op;
+        }
+
+        function method unaryNegation(): ((T, T, T, T), (T, T, T, T), (T, T, T, T), (T, T, T, T))
+        requires |mx| == 4 && forall i :: 0 <= i < |mx| ==> |mx[i]| == 4
+        reads this, this.op
+        {
+            ((op.neg(mx[0][0]),op.neg(mx[0][1]), op.neg(mx[0][2]), op.neg(mx[0][3])), (op.neg(mx[1][0]),op.neg(mx[1][1]), op.neg(mx[1][2]), op.neg(mx[1][3])), (op.neg(mx[2][0]),op.neg(mx[2][1]), op.neg(mx[2][2]), op.neg(mx[2][3])), (op.neg(mx[3][0]),op.neg(mx[3][1]), op.neg(mx[3][2]), op.neg(mx[3][3])))
+        }
+
+        function method BinaryAdd(other: Mat4<T>): ((T, T, T, T), (T, T, T, T), (T, T, T, T), (T, T, T, T))
+        requires |mx| == 4 && forall i :: 0 <= i < |mx| ==> |mx[i]| == 4
+        requires |other.mx| == 4 && forall i :: 0 <= i < |other.mx| ==> |other.mx[i]| == 4
+        reads this, other
+        {
+            ((op.plus(mx[0][0],other.mx[0][0]),op.plus(mx[0][1],other.mx[0][1]),op.plus(mx[0][2],other.mx[0][2]),op.plus(mx[0][3],other.mx[0][3])),
+            (op.plus(mx[1][0],other.mx[1][0]),op.plus(mx[1][1],other.mx[1][1]),op.plus(mx[1][2],other.mx[1][2]),op.plus(mx[1][3],other.mx[1][3])),
+            (op.plus(mx[2][0],other.mx[2][0]),op.plus(mx[2][1],other.mx[2][1]),op.plus(mx[2][2],other.mx[2][2]),op.plus(mx[2][3],other.mx[2][3])),
+            (op.plus(mx[3][0],other.mx[3][0]),op.plus(mx[3][1],other.mx[3][1]),op.plus(mx[3][2],other.mx[3][2]),op.plus(mx[3][3],other.mx[3][3])))
+        }
+
+        function method BinarySub(other: Mat4<T>): ((T, T, T, T), (T, T, T, T), (T, T, T, T), (T, T, T, T))
+        requires |mx| == 4 && forall i :: 0 <= i < |mx| ==> |mx[i]| == 4
+        requires |other.mx| == 4 && forall i :: 0 <= i < |other.mx| ==> |other.mx[i]| == 4
+        reads this, other
+        {
+            ((op.sub(mx[0][0],other.mx[0][0]),op.sub(mx[0][1],other.mx[0][1]),op.sub(mx[0][2],other.mx[0][2]),op.sub(mx[0][3],other.mx[0][3])),
+            (op.sub(mx[1][0],other.mx[1][0]),op.sub(mx[1][1],other.mx[1][1]),op.sub(mx[1][2],other.mx[1][2]),op.sub(mx[1][3],other.mx[1][3])),
+            (op.sub(mx[2][0],other.mx[2][0]),op.sub(mx[2][1],other.mx[2][1]),op.sub(mx[2][2],other.mx[2][2]),op.sub(mx[2][3],other.mx[2][3])),
+            (op.sub(mx[3][0],other.mx[3][0]),op.sub(mx[3][1],other.mx[3][1]),op.sub(mx[3][2],other.mx[3][2]),op.sub(mx[3][3],other.mx[3][3])))
         }
     }
 
@@ -652,18 +776,44 @@ module vectors
 
     method Main()
     {
+        var intMath:= new IntOp(); // this is for whole number math.
+        var realMath := new RealOp(); // Any math that has a fraction or decimal
         // ================================ test vectors ====================================
         // Vec2
-        //var v2int:= new Vec2<int>(0,0); // this example uses an int.
+        
+        var v2int:= new Vec2<int>(0, 0, intMath); // this example uses an int.
+        var v2real := new Vec2<real>(0.0, 0.0, realMath);
 
         // Vec3
+        var v3int:= new Vec3<int>(0, 0, 0, intMath);
+        var v3real:= new Vec3<real>(0.0, 0.0, 0.0, realMath);
         // VecN
+        var listInt : seq<int> := [9,0,2,4];
+        var vNint:= new VecN<int>(listInt, intMath);
+        var listReal: seq<real> := [0.3, 5.4, 5.0,7.5,5.0,6.0];
+        var vNreal:= new VecN<real>(listReal, realMath);
 
         // test matrix
         // Mat2
+        var m2IList : seq<seq<int>> := [[0,1],[1, 0]];
+        var m2Int := new Mat2<int>(m2IList, intMath);
+        var m2RList : seq<seq<real>> := [[0.0,1.1],[10.2, 0.8]];
+        var m2Real := new Mat2<real>(m2RList, realMath);
         // Mat3
+        var m3IList : seq<seq<int>> := [[0,1, 0],[1, 0, 0], [0,0,0]];
+        var m3Int := new Mat3<int>(m3IList, intMath);
+        var m3RList : seq<seq<real>> := [[0.0,1.1, 0.0],[10.2, 0.8, 0.0], [1.0, 1.0, 0.0]];
+        var m3Real := new Mat3<real>(m3RList, realMath);
         // Mat34
+        var m34IList : seq<seq<int>> := [[0,1, 0],[1, 0, 0], [0,0,0],[1, 0, 0]];
+        var m34Int := new Mat34<int>(m34IList, intMath);
+        var m34RList : seq<seq<real>> := [[0.0,1.1, 0.0],[10.2, 0.8, 0.0], [1.0, 1.0, 0.0] ,[10.2, 0.8, 0.0]];
+        var m34Real := new Mat34<real>(m34RList, realMath);
         // Mat4
+        var m4IList : seq<seq<int>> := [[0,1, 0, 0],[1, 0, 0, 1], [0,0,0, 0],[1, 0, 0, 0]];
+        var m4Int := new Mat4<int>(m4IList, intMath);
+        var m4RList : seq<seq<real>> := [[0.0,1.1, 0.0, 0.1],[10.2, 0.8, 0.0, 8.0], [1.0, 1.0, 0.0, 9.0] ,[10.2, 0.8, 0.0, 8.0]];
+        var m4Real := new Mat4<real>(m4RList, realMath);
 
     }
 }
